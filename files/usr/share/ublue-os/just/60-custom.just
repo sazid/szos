@@ -26,7 +26,9 @@ szos-flatpaks:
         exit 0
     fi
 
+    printf 'Installing or updating %d system Flatpak apps from %s\n' "${#apps[@]}" "${manifest}"
     flatpak install --system --or-update -y flathub "${apps[@]}"
+    printf 'Flatpak app set is installed or up to date.\n'
 
 szos-devtools:
     #!/usr/bin/env bash
