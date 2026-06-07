@@ -29,6 +29,18 @@ podman build --pull=newer -t localhost/szos:latest .
 
 ## Publish
 
+Commits pushed to `main` are built by GitHub Actions and published to GHCR:
+
+```text
+ghcr.io/<github-user>/szos:latest
+ghcr.io/<github-user>/szos:sha-<commit>
+```
+
+If the GHCR package is private, make it public or configure registry auth on the
+target machine before switching to it.
+
+You can also publish manually from your workstation:
+
 ```sh
 just push ghcr.io/<github-user> szos latest
 ```
