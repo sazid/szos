@@ -8,6 +8,50 @@ Base image:
 ghcr.io/ublue-os/bazzite-gnome-nvidia-open:stable
 ```
 
+## Getting Started
+
+Start from an existing bootc-based Bazzite/Universal Blue system, then switch to
+this image:
+
+```sh
+sudo bootc switch ghcr.io/sazid/szos:latest
+sudo systemctl reboot
+```
+
+After reboot, confirm the active image:
+
+```sh
+bootc status
+```
+
+Run the personal setup recipes after login:
+
+```sh
+ujust szos-devtools
+ujust szos-flatpaks
+```
+
+To maintain the OS, wait for GitHub Actions to publish a new `latest` image,
+then upgrade and reboot:
+
+```sh
+sudo bootc upgrade
+sudo systemctl reboot
+```
+
+To stage and apply the upgrade immediately:
+
+```sh
+sudo bootc upgrade --apply
+```
+
+If the new deployment has a problem, roll back to the previous one:
+
+```sh
+sudo bootc rollback
+sudo systemctl reboot
+```
+
 ## Layout
 
 - `Containerfile`: image entrypoint and host-level RPM customization point.
@@ -43,14 +87,6 @@ You can also publish manually from your workstation:
 
 ```sh
 just push ghcr.io/<github-user> szos latest
-```
-
-For a real machine, publish to a registry first and then switch from the target
-Bazzite system:
-
-```sh
-sudo bootc switch ghcr.io/<github-user>/szos:latest
-sudo systemctl reboot
 ```
 
 ## Customizing
