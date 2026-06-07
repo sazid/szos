@@ -59,6 +59,25 @@ Use image-level RPM installs only for things that must be in the host OS:
 drivers, VPN clients, shells, system services, and low-level tools. Prefer
 Flatpak, Homebrew, or Distrobox for regular apps.
 
+User-space developer tools are bootstrapped after login:
+
+```sh
+ujust szos-devtools
+```
+
+The image includes OpenJDK 25 LTS, Android platform tools (`adb`/`fastboot`),
+Node.js 22/npm, GitHub CLI, Asciinema, Helix, `just`, and a C/C++ build stack
+with GCC, Clang/LLVM, CMake, Ninja, Make, LLD, LLDB, and `pkg-config`. The
+recipe verifies those host tools, then installs or updates Rust/Cargo, `uv`,
+Codex, and OpenCode under the current user's home directory.
+
+The current system Flatpak app set is tracked in
+`files/usr/share/szos/flatpaks.txt` and can be restored after login:
+
+```sh
+ujust szos-flatpaks
+```
+
 To add RPMs, uncomment and edit the package block in `Containerfile`.
 
 To add files, place them under `files/` with their final paths. For example:

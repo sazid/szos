@@ -12,19 +12,38 @@ LABEL org.opencontainers.image.title="${IMAGE_NAME}" \
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-# Put files under files/ using their final rootfs paths.
-# Example: files/usr/share/ublue-os/just/60-custom.just lands at
-# /usr/share/ublue-os/just/60-custom.just in the image.
-COPY files/ /
-
 # Keep the first build boring. Add only host-level RPMs here: drivers, VPNs,
 # shells, system daemons, and tools that must exist outside containers.
 # Prefer Flatpak, Homebrew, or Distrobox for regular desktop applications.
 #
 RUN rpm-ostree install -y --idempotent --allow-inactive \
+    curl \
+    android-tools \
+    asciinema \
+    clang \
+    cmake \
+    gcc \
+    gcc-c++ \
+    gh \
+    helix \
+    java-25-openjdk-devel \
+    just \
+    lld \
+    lldb \
+    llvm \
+    make \
+    ninja-build \
+    nodejs22 \
+    nodejs22-npm \
+    pkgconf-pkg-config \
+    podman-compose \
     vim-enhanced \
     wireguard-tools \
-    podman-compose \
     && ostree container commit
 
-# RUN ostree container commit
+# Put files under files/ using their final rootfs paths.
+# Example: files/usr/share/ublue-os/just/60-custom.just lands at
+# /usr/share/ublue-os/just/60-custom.just in the image.
+COPY files/ /
+
+RUN ostree container commit
