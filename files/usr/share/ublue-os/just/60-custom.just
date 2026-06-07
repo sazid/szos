@@ -194,7 +194,8 @@ szos-devtools:
                 npm config set prefix "${HOME}/.local"
             fi
 
-            npm install -g @openai/codex opencode-ai
+            # Overwrite stale shims from previous user-local installs.
+            npm install -g --force @openai/codex opencode-ai
         fi
 
         codex --version || true
