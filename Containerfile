@@ -39,6 +39,11 @@ RUN rpm-ostree install -y --idempotent --allow-inactive \
     podman-compose \
     vim-enhanced \
     wireguard-tools \
+    libasan \
+    libubsan \
+    clang-tools-extra \
+    compiler-rt \
+    gdb \
     && ostree container commit
 
 # Put files under files/ using their final rootfs paths.
