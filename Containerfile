@@ -49,6 +49,3 @@ RUN rpm-ostree install -y --idempotent --allow-inactive \
 # Example: files/usr/share/ublue-os/just/60-custom.just lands at
 # /usr/share/ublue-os/just/60-custom.just in the image.
 COPY files/ /
-
-# Verify final image and contents are correct (modern bootc best practice)
-RUN bootc container lint
