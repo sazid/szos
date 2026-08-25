@@ -43,12 +43,12 @@ RUN rpm-ostree install -y --idempotent --allow-inactive \
     libubsan \
     clang-tools-extra \
     compiler-rt \
-    gdb \
-    && ostree container commit
+    gdb
 
 # Put files under files/ using their final rootfs paths.
 # Example: files/usr/share/ublue-os/just/60-custom.just lands at
 # /usr/share/ublue-os/just/60-custom.just in the image.
 COPY files/ /
 
-RUN ostree container commit
+# Verify final image and contents are correct (modern bootc best practice)
+RUN bootc container lint
