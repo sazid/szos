@@ -36,7 +36,7 @@ jobs:
       - name: Free build space
         uses: ublue-os/remove-unwanted-software@695eb75bc387dbcd9685a8e72d23439d8686cba6
 
-      - name: Build image
+      - name: Build image with Podman
         run: |
           TAGS=""
           for tag in ${{ env.IMAGE_TAGS }}; do
