@@ -73,7 +73,11 @@ podman build --pull=newer -t localhost/szos:latest .
 
 ## Publish
 
-Commits pushed to `main` are built by GitHub Actions and published to GHCR:
+Commits pushed to `main` that change `Containerfile`, `files/`, or the build
+workflow are built by GitHub Actions and published to GHCR. Documentation-only
+changes skip the build. To rebuild the current commit (including a newer Bazzite
+`stable` base), use **Actions → Build and publish image → Run workflow** on GitHub.
+Build jobs have a 30-minute limit to bound runner usage.
 
 ```text
 ghcr.io/<github-user>/szos:latest

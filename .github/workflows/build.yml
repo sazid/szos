@@ -4,6 +4,10 @@ on:
   push:
     branches:
       - main
+    paths:
+      - Containerfile
+      - files/**
+      - .github/workflows/build.yml
   workflow_dispatch:
 
 env:
@@ -20,6 +24,7 @@ jobs:
   build-push:
     name: Build and publish
     runs-on: ubuntu-24.04
+    timeout-minutes: 30
     permissions:
       contents: read
       packages: write
@@ -33,35 +38,46 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Check Containerfile before expensive steps
+        run: |
+          if ! grep -Eiq '^[[:space:]]*FROM[[:space:]]+[^[:space:]]+' Containerfile; then
+            echo '::error file=Containerfile::Expected a container recipe with a FROM instruction, not workflow YAML.'
+            exit 1
+          fi
+
       - name: Free build space
         uses: ublue-os/remove-unwanted-software@695eb75bc387dbcd9685a8e72d23439d8686cba6
 
-      - name: Build image
-        id: build-image
-        uses: redhat-actions/buildah-build@v2
-        with:
-          containerfiles: |
-            ./Containerfile
-          image: ${{ env.IMAGE_NAME }}
-          tags: ${{ env.IMAGE_TAGS }}
-          labels: |
-            org.opencontainers.image.title=${{ env.IMAGE_NAME }}
-            org.opencontainers.image.description=${{ env.IMAGE_DESCRIPTION }}
-            org.opencontainers.image.source=https://github.com/${{ github.repository }}
-            org.opencontainers.image.revision=${{ github.sha }}
-            containers.bootc=1
-          oci: false
+      - name: Build image with Podman
+        run: |
+          read -r -a tags <<< "$IMAGE_TAGS"
+          tag_args=()
+          for tag in "${tags[@]}"; do
+            tag_args+=(--tag "localhost/${IMAGE_NAME}:${tag}")
+          done
+
+          sudo podman build \
+            --format docker \
+            "${tag_args[@]}" \
+            --label "org.opencontainers.image.title=${IMAGE_NAME}" \
+            --label "org.opencontainers.image.description=${IMAGE_DESCRIPTION}" \
+            --label "org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}" \
+            --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
+            --label "containers.bootc=1" \
+            --file Containerfile .
 
       - name: Push image
-        id: push-image
-        uses: redhat-actions/push-to-registry@v2
-        with:
-          image: ${{ steps.build-image.outputs.image }}
-          tags: ${{ steps.build-image.outputs.tags }}
-          registry: ${{ env.IMAGE_REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          printf '%s' "$GHCR_TOKEN" | sudo podman login \
+            --username "$GITHUB_ACTOR" --password-stdin "${IMAGE_REGISTRY%%/*}"
+          read -r -a tags <<< "$IMAGE_TAGS"
+          for tag in "${tags[@]}"; do
+            sudo podman push "localhost/${IMAGE_NAME}:${tag}" \
+              "docker://${IMAGE_REGISTRY}/${IMAGE_NAME}:${tag}"
+          done
 
       - name: Print image reference
         run: |
-          echo 'Published ${{ steps.push-image.outputs.registry-paths }}'
+          echo "Published ${IMAGE_REGISTRY}/${IMAGE_NAME}:${DEFAULT_TAG}"

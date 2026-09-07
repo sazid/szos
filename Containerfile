@@ -1,64 +1,54 @@
-name: Build and publish image
+ARG BASE_IMAGE=ghcr.io/ublue-os/bazzite-gnome-nvidia-open
+ARG BASE_TAG=stable
 
-on:
-  push:
-    branches:
-      - main
-  workflow_dispatch:
+FROM ${BASE_IMAGE}:${BASE_TAG}
 
-env:
-  DEFAULT_TAG: latest
-  IMAGE_DESCRIPTION: "Sazid's personal bootc Open Image"
-  IMAGE_NAME: ${{ github.event.repository.name }}
-  IMAGE_REGISTRY: ghcr.io/${{ github.repository_owner }}
+ARG IMAGE_NAME=szos
+ARG IMAGE_DESCRIPTION="Sazid's personal bootc Open Image"
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+LABEL org.opencontainers.image.title="${IMAGE_NAME}" \
+      org.opencontainers.image.description="${IMAGE_DESCRIPTION}" \
+      org.opencontainers.image.source="https://github.com/sazid/szos"
 
-jobs:
-  build-push:
-    name: Build and publish
-    runs-on: ubuntu-24.04
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - name: Normalize image metadata
-        run: |
-          echo "IMAGE_NAME=${IMAGE_NAME,,}" >> "${GITHUB_ENV}"
-          echo "IMAGE_REGISTRY=${IMAGE_REGISTRY,,}" >> "${GITHUB_ENV}"
-          echo "IMAGE_TAGS=${DEFAULT_TAG} sha-${GITHUB_SHA}" >> "${GITHUB_ENV}"
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-      - name: Checkout
-        uses: actions/checkout@v6
+# Keep the first build boring. Add only host-level RPMs here: drivers, VPNs,
+# shells, system daemons, and tools that must exist outside containers.
+# Prefer Flatpak, Homebrew, or Distrobox for regular desktop applications.
+#
+RUN rpm-ostree install -y --idempotent --allow-inactive \
+    curl \
+    android-tools \
+    asciinema \
+    clang \
+    cmake \
+    gcc \
+    gcc-c++ \
+    gh \
+    helix \
+    java-25-openjdk-devel \
+    just \
+    lld \
+    lldb \
+    llvm \
+    make \
+    ninja-build \
+    nodejs22 \
+    nodejs22-npm \
+    pkgconf-pkg-config \
+    podman-compose \
+    vim-enhanced \
+    wireguard-tools \
+    libasan \
+    libubsan \
+    clang-tools-extra \
+    compiler-rt \
+    gdb \
+    && ostree container commit
 
-      - name: Free build space
-        uses: ublue-os/remove-unwanted-software@695eb75bc387dbcd9685a8e72d23439d8686cba6
+# Put files under files/ using their final rootfs paths.
+# Example: files/usr/share/ublue-os/just/60-custom.just lands at
+# /usr/share/ublue-os/just/60-custom.just in the image.
+COPY files/ /
 
-      - name: Build image with Podman
-        run: |
-          TAGS=""
-          for tag in ${{ env.IMAGE_TAGS }}; do
-            TAGS="$TAGS -t localhost/${{ env.IMAGE_NAME }}:$tag"
-          done
-          
-          sudo podman build \
-            $TAGS \
-            --label "org.opencontainers.image.title=${{ env.IMAGE_NAME }}" \
-            --label "org.opencontainers.image.description=${{ env.IMAGE_DESCRIPTION }}" \
-            --label "org.opencontainers.image.source=https://github.com/${{ github.repository }}" \
-            --label "org.opencontainers.image.revision=${{ github.sha }}" \
-            --label "containers.bootc=1" \
-            --file ./Containerfile .
-
-      - name: Push image
-        run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | sudo podman login -u ${{ github.actor }} --password-stdin ${{ env.IMAGE_REGISTRY }}
-          for tag in ${{ env.IMAGE_TAGS }}; do
-            sudo podman push localhost/${{ env.IMAGE_NAME }}:$tag ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:$tag
-          done
-
-      - name: Print image reference
-        run: |
-          echo "Published ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }}"
+RUN ostree container commit
